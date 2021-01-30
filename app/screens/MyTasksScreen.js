@@ -6,22 +6,21 @@ import {
     TouchableOpacity,
     FlatList,
     Modal,
-    Text,
 } from "react-native";
 import CalendarStrip from "react-native-calendar-strip";
 import moment from "moment";
 import { FontAwesome } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRef } from "react";
+import { useEffect } from "react";
+import { CalendarList } from "react-native-calendars";
 
 import H1 from "../components/H1";
 import Screen from "../components/Screen";
 import colors from "../config/colors";
-import { useRef } from "react";
 import defaultStyles from "../config/defaultStyles";
 import TaskCard from "../components/TaskCard";
 import ListItemAction from "../components/ListItemAction";
-import { useEffect } from "react";
-import { CalendarList, Agenda } from "react-native-calendars";
 
 //prevent warning
 moment.createFromInputFallback = function (config) {
@@ -67,36 +66,76 @@ const tasks = [
 ];
 
 function MyTasksScreen({ route }) {
-    //const [id, setId] = useState(5);
+    /*function useHookWithRefCallback() {
+        const ref = useRef(null);
+        const setRef = useCallback((node) => {
+            if (ref.current) {
+                // Make sure to cleanup any events/references added to the last instance
+            }
 
-    /*let Task = {
-        id: id,
-        task: route?.params?.task ? route.params.task : null,
-        startTime: "18:30",
-        endTime: "20:30",
-        date: "2021-01-2T05:00:00.000Z",
-    };*/
+            if (node) {
+                // Check if a node is actually passed. Otherwise node would be null.
+                // You can now do what you need to, addEventListeners, measure, etc.
+            }
+
+            // Save a reference to the node
+            ref.current = node;
+        }, []);
+
+        return [setRef];
+    }*/
+
     const [taskList, setTaskList] = useState(tasks);
     const [modalVisible, setModalVisible] = useState(false);
     const calendarStrip = useRef();
-    const [selectedDate, setSelectedDate] = useState();
-    //const [taskAdd, setTaskAdd] = useState();
-    //const [isAddTask, setIsAddTask] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(Date.now());
+    const [loaded, setLoadedStatus] = useState();
+    const [refreshScreen, setRefreshScreen] = useState(true);
 
+    //handle scroll to today in first time open app (fail)
     /*useEffect(() => {
-        route?.params?.task
-            ? console.log(route.params.task)
-            : console.log("ga");
-        setIsAddTask(true) : setIsAddTask(false);
-            setId(id + 1);
-            setTaskAdd(Task);
+        const loadItems = async () => {
+            console.log("preprocessing here");
+        };
+        loadItems().then(() => {
+            setLoadedStatus(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!loaded) return;
+        const scrollToToday = () => {
+            try {
+                onDateSelected(Date.now());
+                calendarStrip.current.setSelectedDate(Date.now());
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        scrollToToday();
+    }, [loaded]);*/
+    useEffect(() => {
+        onDateSelected(Date.now());
+        //calendarStrip.current.setSelectedDate(Date.now());
+    }, []);
+
+    //handle add new task
+    const taskDetail = route.params;
+    useEffect(() => {
+        taskDetail ? console.log(taskDetail) : console.log("no task added");
+        if (taskDetail) {
+            tasks.push({
+                id: taskDetail.id,
+                task: taskDetail.task,
+                startTime: taskDetail.startTime,
+                endTime: taskDetail.endTime,
+                date: taskDetail.date,
+            });
+            setSelectedDate(taskDetail.date);
+            onDateSelected(taskDetail.data);
         }
-        
-        setTaskAdd(null);
-        tasks.push(taskAdd);
-        console.log(Task);
-        route.params.task = null;
-    });*/
+    }, [taskDetail]);
 
     //Handle day selected in calendar trip
     const onDateSelected = (date) => {
@@ -140,10 +179,6 @@ function MyTasksScreen({ route }) {
     const handlePressItem = () => {
         console.log("item selected");
     };
-
-    useEffect(() => {
-        onDateSelected(Date.now());
-    }, []);
 
     return (
         <Screen style={styles.container}>

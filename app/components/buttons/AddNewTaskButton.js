@@ -14,13 +14,33 @@ import Modal from "react-native-modal";
 import colors from "../../config/colors";
 import H1 from "../H1";
 import routes from "../../navigation/routes";
+import useStateWithPromise from "../hooks/useStateWithPromise";
 
 function AddNewTaskButton({ navigation }) {
+    let taskDetail = {
+        id: 6,
+        task: task,
+        startTime: "18:30",
+        endTime: "20:30",
+        date: "2021-01-2T05:00:00.000Z",
+    };
+
     const [modalVisible, setModalVisible] = useState(false);
     const [task, setTask] = useState("");
+    const [id, setId] = useState(6);
+    const [taskItem, setTaskItem] = useStateWithPromise(taskDetail);
 
-    const handleAddPress = () => {
-        navigation.jumpTo(routes.TASKS, { task: task });
+    const handleAddPress = async () => {
+        setId(id + 1);
+        taskDetail = {
+            id: id,
+            task: task,
+            startTime: "18:30",
+            endTime: "20:30",
+            date: Date.now(),
+        };
+        const result = await setTaskItem(taskDetail);
+        navigation.jumpTo(routes.TASKS, result);
         setModalVisible(false);
     };
 
