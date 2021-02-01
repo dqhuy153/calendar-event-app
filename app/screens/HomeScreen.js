@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, Text, Image, FlatList } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 
-import H1 from "../components/H1";
+import H1 from "../components/text/H1";
 import LargeCard from "../components/LargeCard";
 import Screen from "../components/Screen";
 import colors from "../config/colors";

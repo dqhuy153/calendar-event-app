@@ -5,4 +5,5 @@ export default {
     primary: "#1e3799",
     secondary: "#e55039",
     white: "#fff",
+    lessBlack: "#888888",
 };

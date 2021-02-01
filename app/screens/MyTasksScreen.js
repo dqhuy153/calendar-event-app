@@ -13,9 +13,9 @@ import { FontAwesome } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRef } from "react";
 import { useEffect } from "react";
-import { CalendarList } from "react-native-calendars";
 
-import H1 from "../components/H1";
+import CalendarListPicker from "../components/CalendarListPicker";
+import H1 from "../components/text/H1";
 import Screen from "../components/Screen";
 import colors from "../config/colors";
 import defaultStyles from "../config/defaultStyles";
@@ -30,38 +30,17 @@ moment.createFromInputFallback = function (config) {
 const tasks = [
     {
         id: 1,
-        task: "Meeting at coffee and do some photo shoots",
-        startTime: "9:00",
-        endTime: "11:00",
+        task: "Meeting at coffee and take some photo shoots",
+        startTime: "2021-02-01T09:00:24+07:00",
+        endTime: "2021-02-01T11:00:24+07:00",
         date: Date.now(),
     },
     {
         id: 2,
-        task: "Buy foods",
-        startTime: "11:00",
-        endTime: "12:00",
+        task: "Learn coding app",
+        startTime: "2021-02-01T13:00:24+07:00",
+        endTime: "2021-02-01T16:00:24+07:00",
         date: Date.now(),
-    },
-    {
-        id: 3,
-        task: "Learning coding app",
-        startTime: "13:00",
-        endTime: "16:00",
-        date: "2021-01-25T05:00:00.000Z",
-    },
-    {
-        id: 4,
-        task: "Run 3km",
-        startTime: "16:30",
-        endTime: "17:30",
-        date: "2021-01-27T05:00:00.000Z",
-    },
-    {
-        id: 5,
-        task: "Lol lol",
-        startTime: "18:30",
-        endTime: "20:30",
-        date: "2021-01-2T05:00:00.000Z",
     },
 ];
 
@@ -89,8 +68,9 @@ function MyTasksScreen({ route }) {
     const [modalVisible, setModalVisible] = useState(false);
     const calendarStrip = useRef();
     const [selectedDate, setSelectedDate] = useState(Date.now());
-    const [loaded, setLoadedStatus] = useState();
-    const [refreshScreen, setRefreshScreen] = useState(true);
+
+    //const [loaded, setLoadedStatus] = useState();
+    //const [refreshScreen, setRefreshScreen] = useState(true);
 
     //handle scroll to today in first time open app (fail)
     /*useEffect(() => {
@@ -133,7 +113,8 @@ function MyTasksScreen({ route }) {
                 date: taskDetail.date,
             });
             setSelectedDate(taskDetail.date);
-            onDateSelected(taskDetail.data);
+            calendarStrip.current.setSelectedDate(taskDetail.date);
+            onDateSelected(taskDetail.date);
         }
     }, [taskDetail]);
 
@@ -156,14 +137,7 @@ function MyTasksScreen({ route }) {
             moment(Date.now()).format("YYYY-M-DD") ===
             date.year + "-" + date.month + "-" + date.day
                 ? Date.now()
-                : date.year +
-                  "-" +
-                  `${
-                      parseInt(date.month) < 10 ? "0" + date.month : date.month
-                  }` +
-                  "-" +
-                  `${parseInt(date.day) < 10 ? "0" + date.day : date.day}` +
-                  "T05:00:00.000Z"; //"2021-01-30T05:00:00.000Z";
+                : date.dateString + "T05:00:00.000Z"; //"2021-01-30T05:00:00.000Z";
 
         setSelectedDate(selectedDay);
         calendarStrip.current.setSelectedDate(selectedDay);
@@ -172,9 +146,10 @@ function MyTasksScreen({ route }) {
     };
 
     const handleDelete = (deleteTask) => {
+        tasks.splice(tasks.indexOf(deleteTask), 1);
         setTaskList(taskList.filter((item) => item.id !== deleteTask.id));
-        console.log("Delete");
-        console.log(taskList);
+
+        console.log("Delete" + deleteTask);
     };
     const handlePressItem = () => {
         console.log("item selected");
@@ -268,8 +243,8 @@ function MyTasksScreen({ route }) {
                     renderItem={({ item }) => (
                         <TaskCard
                             task={item.task}
-                            startTime={item.startTime}
-                            endTime={item.endTime}
+                            startTime={moment(item.startTime).format("HH:mm")}
+                            endTime={moment(item.endTime).format("HH:mm")}
                             renderRightActions={() => (
                                 <ListItemAction
                                     iconName="done"
@@ -297,46 +272,11 @@ function MyTasksScreen({ route }) {
                 onRequestClose={() => setModalVisible(false)}
             >
                 <Screen>
-                    <View style={styles.headerModal}>
-                        <H1>Calendar</H1>
-                        <TouchableOpacity
-                            onPress={() => setModalVisible(false)}
-                            style={styles.closeModal}
-                        >
-                            <MaterialIcons
-                                name="close"
-                                size={20}
-                                color={colors.medium}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                    <View
-                        style={[
-                            defaultStyles.cardShadow,
-                            styles.calendarListContainer,
-                        ]}
-                    >
-                        <CalendarList
-                            // Callback which gets executed when visible months change in scroll view. Default = undefined
-                            /*onVisibleMonthsChange={(months) => {
-                            console.log("now these months are visible", months);
-                        }}*/
-                            onDayPress={handleCalendarListSelect}
-                            // Max amount of months allowed to scroll to the past. Default = 50
-                            pastScrollRange={50}
-                            // Max amount of months allowed to scroll to the future. Default = 50
-                            futureScrollRange={50}
-                            // Enable or disable scrolling of calendar list
-                            scrollEnabled={true}
-                            // Enable or disable vertical scroll indicator. Default = false
-                            showScrollIndicator={true}
-                            //...calendarParams
-                            style={{
-                                borderTopLeftRadius: 50,
-                                borderTopRightRadius: 50,
-                            }}
-                        />
-                    </View>
+                    <CalendarListPicker
+                        onClosePress={() => setModalVisible(false)}
+                        onDayPress={handleCalendarListSelect}
+                        style={defaultStyles.cardShadow}
+                    />
                 </Screen>
             </Modal>
         </Screen>
@@ -349,11 +289,7 @@ const styles = StyleSheet.create({
         height: 130,
         paddingBottom: 0,
     },
-    calendarListContainer: {
-        borderTopLeftRadius: 50,
-        borderTopRightRadius: 50,
-        shadowRadius: 15,
-    },
+
     calenderIcon: {
         alignItems: "flex-end",
         height: "38%",
@@ -371,13 +307,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingHorizontal: 25,
     },
-    headerModal: {
-        alignItems: "center",
-        flexDirection: "row",
-        justifyContent: "space-between",
-        padding: 30,
-        paddingTop: 0,
-    },
+
     heading: {
         textAlign: "center",
         color: colors.primary,
