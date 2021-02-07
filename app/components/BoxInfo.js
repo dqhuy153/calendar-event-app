@@ -6,7 +6,7 @@ import colors from "../config/colors";
 import TextInAddNew from "./text/TextInAddNew";
 
 function BoxInfo({ onPress, title, subTitle, style }) {
-    return (
+    return onPress ? (
         <TouchableOpacity onPress={onPress}>
             <View style={[styles.box, style]}>
                 <TextInAddNew>{title}</TextInAddNew>
@@ -20,6 +20,18 @@ function BoxInfo({ onPress, title, subTitle, style }) {
                 </View>
             </View>
         </TouchableOpacity>
+    ) : (
+        <View style={[styles.box, style]}>
+            <TextInAddNew>{title}</TextInAddNew>
+            <View style={styles.boxRightSide}>
+                <Text style={styles.text}>{subTitle}</Text>
+                <Entypo
+                    name="chevron-small-right"
+                    size={22}
+                    color={colors.lessBlack}
+                />
+            </View>
+        </View>
     );
 }
 

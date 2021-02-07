@@ -5,14 +5,12 @@ import {
     TouchableOpacity,
     TextInput,
     Button,
-    Text,
     ScrollView,
 } from "react-native";
 import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import Modal from "react-native-modal";
-import { createStackNavigator } from "@react-navigation/stack";
-import moment, { utc } from "moment";
+import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRef } from "react";
 
@@ -22,6 +20,36 @@ import routes from "../../navigation/routes";
 import useStateWithPromise from "../hooks/useStateWithPromise";
 import BoxInfo from "../BoxInfo";
 import CalendarListPicker from "../CalendarListPicker";
+import { useEffect } from "react";
+import SelectBoxTaskDetail from "../SelectBoxTaskDetail";
+
+const categories = [
+    {
+        label: "Education",
+        value: "education",
+        colorIcon: colors.primary,
+    },
+    {
+        label: "Personal",
+        value: "personal",
+        colorIcon: "lightgreen",
+    },
+    {
+        label: "Work",
+        value: "work",
+        colorIcon: "gold",
+    },
+    {
+        label: "Health",
+        value: "health",
+        colorIcon: "tomato",
+    },
+];
+const placeholder = {
+    label: "None",
+    value: null,
+    color: "#9EA0A4",
+};
 
 function AddNewTaskButton({ navigation }) {
     let taskDetail = {};
@@ -38,25 +66,25 @@ function AddNewTaskButton({ navigation }) {
     const [task, setTask] = useState("");
     const [note, setNote] = useState("");
     const [date, setDate] = useState(Date.now());
-    const [id, setId] = useState(6);
+    const [id, setId] = useState(3);
+    const [category, setCategory] = useState();
+    const [categoryColor, setCategoryColor] = useState(null);
 
     const [typeOfTime, setTypeOfTime] = useState("startTime");
-    const [startTime, setStartTime] = useState();
-    const [endTime, setEndTime] = useState();
+    const [startTime, setStartTime] = useState(null);
+    const [endTime, setEndTime] = useState(null);
 
     const [taskItem, setTaskItem] = useStateWithPromise(taskDetail);
     const scrollView = useRef();
 
     //Handle Time Picker
     const handleTimePicker = (date) => {
-        console.log(moment(date).utc());
+        console.log(moment(date).format());
+        setEndDatePickerVisibility(false);
+        setStartDatePickerVisibility(false);
         typeOfTime === "startTime"
             ? setStartTime(moment(date).format())
             : setEndTime(moment(date).format());
-
-        console.log(new Date(Date.now()) instanceof Date);
-        setEndDatePickerVisibility(false);
-        setStartDatePickerVisibility(false);
     };
 
     //Handle Date selected
@@ -75,16 +103,31 @@ function AddNewTaskButton({ navigation }) {
     const handleAddPress = async () => {
         setId(id + 1);
         let taskDetail = {
-            date: startTime,
+            date: startTime ? startTime : date,
             endTime: endTime,
             id: id,
             note: note,
             startTime: startTime,
             task: task,
+            status: "waiting",
+            repeat: "",
+            reminder: "",
+            subTasks: [],
+            category: category,
+            categoryColor: categoryColor,
         };
         const result = await setTaskItem(taskDetail);
         navigation.jumpTo(routes.TASKS, result);
         setModalVisible(false);
+        setTask(null);
+        setNote(null);
+        setStartTime(null), setEndTime(null);
+    };
+
+    //handleCancelSetEndTime
+    const handleCancelSetEndTime = () => {
+        setEndTime(null);
+        setEndDatePickerVisibility(false);
     };
 
     return (
@@ -107,6 +150,9 @@ function AddNewTaskButton({ navigation }) {
                 onBackdropPress={() => setModalVisible(false)}
                 onBackButtonPress={() => setModalVisible(false)}
                 style={styles.contentView}
+                onSwipeComplete={() => setModalVisible(false)}
+                swipeDirection="down"
+                propagateSwipe
             >
                 <View style={styles.content}>
                     <View style={styles.header}>
@@ -148,6 +194,11 @@ function AddNewTaskButton({ navigation }) {
                             onBackButtonPress={() =>
                                 setModalDatePickerVisible(false)
                             }
+                            onSwipeComplete={() =>
+                                setModalDatePickerVisible(false)
+                            }
+                            swipeDirection="down"
+                            propagateSwipe
                         >
                             <View style={styles.modalContent}>
                                 <CalendarListPicker
@@ -161,15 +212,29 @@ function AddNewTaskButton({ navigation }) {
 
                         <BoxInfo
                             title="Start Time"
-                            subTitle={startTime}
+                            subTitle={
+                                startTime
+                                    ? moment(startTime).format("HH:mm")
+                                    : null
+                            }
                             onPress={() => {
                                 setStartDatePickerVisibility(true);
                                 setTypeOfTime("startTime");
                             }}
                         />
+
                         <BoxInfo
                             title="End Time"
-                            subTitle={endTime}
+                            subTitle={
+                                endTime
+                                    ? moment(endTime).format("DD/MM") ===
+                                      moment(startTime).format("DD/MM")
+                                        ? moment(endTime).format("HH:mm")
+                                        : moment(endTime).format(
+                                              "(DD/ MM/ YYYY) HH:mm"
+                                          )
+                                    : null
+                            }
                             onPress={() => {
                                 setEndDatePickerVisibility(true);
                                 setTypeOfTime("endTime");
@@ -186,39 +251,71 @@ function AddNewTaskButton({ navigation }) {
                             }}
                             headerTextIOS="Pick time"
                             is24Hour
+                            confirmTextIOS="Done"
+                            textColor={colors.black}
+                            style={{ color: colors.black }}
                         />
                         <DateTimePickerModal
-                            minimumDate={new Date(startTime)}
-                            date={new Date(startTime)}
+                            minimumDate={
+                                startTime ? new Date(startTime) : new Date(date)
+                            }
+                            date={
+                                startTime ? new Date(startTime) : new Date(date)
+                            }
                             headerTextIOS="Pick date and time"
                             isVisible={isEndDatePickerVisible}
                             is24Hour
+                            confirmTextIOS="Done"
+                            cancelTextIOS="No End Time"
                             onConfirm={handleTimePicker}
-                            onCancel={() => setEndDatePickerVisibility(false)}
+                            onCancel={handleCancelSetEndTime}
                             mode="datetime"
+                            onTouchCancel={() =>
+                                setEndDatePickerVisibility(false)
+                            }
+                            textColor={colors.black}
                         />
 
                         <BoxInfo
                             title="Repeat"
                             subTitle="Never"
-                            onPress={handleDateSelect}
+                            onPress={() => {
+                                alert("Not available");
+                            }}
                         />
                         <BoxInfo
                             title="Reminder"
                             subTitle="None"
-                            onPress={handleDateSelect}
+                            onPress={() => {
+                                alert("Not available");
+                            }}
                             style={{ marginBottom: 15 }}
                         />
                         <BoxInfo
                             title="Sub Tasks"
                             subTitle="0 Added"
-                            onPress={handleDateSelect}
+                            onPress={() => {
+                                alert("Not available");
+                            }}
                         />
-                        <BoxInfo
-                            title="Categories"
-                            subTitle="None"
-                            onPress={handleDateSelect}
-                        />
+                        <View style={styles.categoryPicker}>
+                            <SelectBoxTaskDetail
+                                placeholder={placeholder}
+                                items={categories}
+                                onValueChange={(value, index) => {
+                                    setCategory(value);
+                                    index !== 0
+                                        ? setCategoryColor(
+                                              categories[index - 1].colorIcon
+                                          )
+                                        : setCategoryColor(null);
+                                }}
+                                key={(value) => value}
+                                value={category}
+                                color={categoryColor}
+                                title="Category"
+                            />
+                        </View>
                         <TextInput
                             placeholder="Note..."
                             style={styles.newNoteInput}
@@ -234,6 +331,14 @@ function AddNewTaskButton({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    categoryPicker: {
+        backgroundColor: colors.light,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderTopLeftRadius: 15,
+        borderTopRightRadius: 15,
+        marginBottom: 2,
+    },
     content: {
         backgroundColor: "white",
         height: "88%",

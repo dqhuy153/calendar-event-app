@@ -27,9 +27,11 @@ function TaskCard({
                     </View>
                     <View style={styles.detailContainer}>
                         <Text style={styles.task}>{task}</Text>
-                        <Text style={styles.rangeTime}>
-                            {startTime} - {endTime}
-                        </Text>
+                        {endTime && (
+                            <Text style={styles.rangeTime}>
+                                {startTime} - {endTime}
+                            </Text>
+                        )}
                     </View>
                 </View>
             </TouchableHighlight>

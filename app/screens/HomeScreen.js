@@ -64,7 +64,7 @@ function HomeScreen(props) {
             <>
                 <View style={styles.header__container}>
                     <View>
-                        <Text style={styles.header__title}>Hey, Huy</Text>
+                        <Text style={styles.header__title}>Hey, You</Text>
                         <Text style={styles.header__desc}>
                             Let's make this day productive
                         </Text>
