@@ -8,14 +8,20 @@ function AddButton({
     color = colors.secondary,
     iconSize,
     onPress,
-    margin,
+    marginRightIcon,
+    marginLeftIcon,
     title,
     fontSize,
 }) {
     return (
         <TouchableOpacity style={styles.addBtn} onPress={onPress}>
-            <AntDesign name="pluscircleo" size={iconSize} color={color} />
-            <Text style={{ fontSize: fontSize, marginLeft: margin }}>
+            <AntDesign
+                name="pluscircleo"
+                size={iconSize}
+                color={color}
+                style={{ marginLeft: marginLeftIcon }}
+            />
+            <Text style={{ fontSize: fontSize, marginLeft: marginRightIcon }}>
                 {title}
             </Text>
         </TouchableOpacity>

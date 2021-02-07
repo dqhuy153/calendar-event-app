@@ -20,31 +20,9 @@ import routes from "../../navigation/routes";
 import useStateWithPromise from "../hooks/useStateWithPromise";
 import BoxInfo from "../BoxInfo";
 import CalendarListPicker from "../CalendarListPicker";
-import { useEffect } from "react";
 import SelectBoxTaskDetail from "../SelectBoxTaskDetail";
+import categories from "../../values/categories";
 
-const categories = [
-    {
-        label: "Education",
-        value: "education",
-        colorIcon: colors.primary,
-    },
-    {
-        label: "Personal",
-        value: "personal",
-        colorIcon: "lightgreen",
-    },
-    {
-        label: "Work",
-        value: "work",
-        colorIcon: "gold",
-    },
-    {
-        label: "Health",
-        value: "health",
-        colorIcon: "tomato",
-    },
-];
 const placeholder = {
     label: "None",
     value: null,

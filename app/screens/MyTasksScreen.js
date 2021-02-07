@@ -301,7 +301,7 @@ function MyTasksScreen({ route }) {
             >
                 <View style={styles.modalContent}>
                     <TaskDetailScreen
-                        onCancelPress={() => setTaskDetailModalVisible(false)}
+                        onUnsavePress={() => setTaskDetailModalVisible(false)}
                         taskName={taskDetailToDetailScreen.task}
                         startTimeTask={taskDetailToDetailScreen.startTime}
                         endTimeTask={taskDetailToDetailScreen.endTime}

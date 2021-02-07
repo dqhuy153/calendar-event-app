@@ -6,4 +6,5 @@ export default {
     secondary: "#e55039",
     white: "#fff",
     lessBlack: "#888888",
+    placeholder: "#9EA0A4",
 };

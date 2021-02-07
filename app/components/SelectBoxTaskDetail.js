@@ -2,11 +2,13 @@ import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { Feather } from "@expo/vector-icons";
+import AddButton from "./buttons/AddButton";
 
 function SelectBoxTaskDetail({
     placeholder,
     items,
     onValueChange,
+    onNewCategoryPress,
     value,
     color,
     title,
@@ -14,38 +16,48 @@ function SelectBoxTaskDetail({
     return (
         <View style={styles.container}>
             <Text style={{ fontSize: 17 }}>{title}</Text>
-
-            <RNPickerSelect
-                placeholder={placeholder}
-                items={items}
-                onValueChange={onValueChange}
-                style={{
-                    ...pickerSelectStyles,
-                    iconContainer: {
-                        top: 8,
-                        right: 12,
-                    },
-                }}
-                value={value}
-                useNativeAndroidPickerStyle={false}
-                textInputProps={{ underlineColor: "yellow" }}
-                Icon={() => {
-                    return color ? (
-                        <View
-                            style={{
-                                width: 15,
-                                height: 15,
-                                borderRadius: 7.5,
-                                backgroundColor: color,
-                                top: 5,
-                            }}
-                        ></View>
-                    ) : (
-                        <Feather name="chevron-down" size={24} color="black" />
-                    );
-                }}
-                fixAndroidTouchableBug
-            />
+            <View style={{ flexDirection: "row-reverse" }}>
+                <AddButton
+                    iconSize={15}
+                    marginLeftIcon={15}
+                    onPress={onNewCategoryPress}
+                />
+                <RNPickerSelect
+                    placeholder={placeholder}
+                    items={items}
+                    onValueChange={onValueChange}
+                    style={{
+                        ...pickerSelectStyles,
+                        iconContainer: {
+                            top: 8,
+                            right: 12,
+                        },
+                    }}
+                    value={value}
+                    useNativeAndroidPickerStyle={false}
+                    textInputProps={{ underlineColor: "yellow" }}
+                    Icon={() => {
+                        return color ? (
+                            <View
+                                style={{
+                                    width: 15,
+                                    height: 15,
+                                    borderRadius: 7.5,
+                                    backgroundColor: color,
+                                    top: 5,
+                                }}
+                            ></View>
+                        ) : (
+                            <Feather
+                                name="chevron-down"
+                                size={24}
+                                color="black"
+                            />
+                        );
+                    }}
+                    fixAndroidTouchableBug
+                />
+            </View>
         </View>
     );
 }
@@ -62,7 +74,7 @@ const pickerSelectStyles = StyleSheet.create({
         fontSize: 16,
         paddingVertical: 11,
         paddingHorizontal: 10,
-        width: 140,
+        width: 120,
         borderWidth: 1,
         borderColor: "gray",
         borderRadius: 10,

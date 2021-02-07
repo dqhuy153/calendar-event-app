@@ -5,13 +5,18 @@ import {
     TouchableOpacity,
     TextInput,
     ScrollView,
+    Keyboard,
+    Button,
+    Alert,
 } from "react-native";
-import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Modal from "react-native-modal";
 import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRef } from "react";
+import randomColor from "randomcolor";
 
+import categories from "../values/categories";
 import TaskDetailButton from "../components/buttons/TaskDetailButton";
 import H1 from "../components/text/H1";
 import colors from "../config/colors";
@@ -19,28 +24,6 @@ import SelectBoxTaskDetail from "../components/SelectBoxTaskDetail";
 import BoxInfo from "../components/BoxInfo";
 import CalendarListPicker from "../components/CalendarListPicker";
 
-const categories = [
-    {
-        label: "Education",
-        value: "education",
-        colorIcon: colors.primary,
-    },
-    {
-        label: "Personal",
-        value: "personal",
-        colorIcon: "lightgreen",
-    },
-    {
-        label: "Work",
-        value: "work",
-        colorIcon: "gold",
-    },
-    {
-        label: "Health",
-        value: "health",
-        colorIcon: "tomato",
-    },
-];
 const placeholder = {
     label: "None",
     value: null,
@@ -48,7 +31,8 @@ const placeholder = {
 };
 
 function TaskDetailScreen({
-    onCancelPress,
+    onUnsavePress,
+    onSavePress,
     dayTask,
     startTimeTask,
     endTimeTask,
@@ -56,10 +40,18 @@ function TaskDetailScreen({
     taskName,
     categoryTask,
     categoryColorTask,
+    onDeletePress,
+    onMissPress,
+    onCompletePress,
 }) {
+    const [modalDatePickerVisible, setModalDatePickerVisible] = useState(false);
+    const [modelNewCategoryVisible, setModelNewCategoryVisible] = useState(
+        false
+    );
+
     const [category, setCategory] = useState(categoryTask);
     const [categoryColor, setCategoryColor] = useState(categoryColorTask);
-    const [modalDatePickerVisible, setModalDatePickerVisible] = useState(false);
+    const [newCategory, setNewCategory] = useState();
     const [isStartDatePickerVisible, setStartDatePickerVisibility] = useState(
         false
     );
@@ -105,7 +97,18 @@ function TaskDetailScreen({
         setEndDatePickerVisibility(false);
     };
 
-    const handleCompletePress = () => {};
+    const handleNewCategoryPress = () => {
+        Keyboard.dismiss();
+        let randomcolor = randomColor();
+        categories.push({
+            label: newCategory,
+            value: newCategory,
+            colorIcon: randomcolor,
+        });
+        setCategory(newCategory);
+        setCategoryColor(randomcolor);
+        setModelNewCategoryVisible(false);
+    };
 
     return (
         <View style={styles.container}>
@@ -114,52 +117,56 @@ function TaskDetailScreen({
                     flexDirection: "row",
                     justifyContent: "space-between",
                     paddingHorizontal: 2,
+                    alignItems: "center",
+                    marginBottom: 15,
                 }}
             >
-                <H1 style={{ color: colors.primary, marginBottom: 20 }}>
-                    {taskName}
-                </H1>
-                <TouchableOpacity
-                    onPress={onCancelPress}
+                <TextInput
                     style={{
-                        width: 25,
+                        color: colors.primary,
+                        width: "60%",
+                        fontSize: 23,
+                        fontWeight: "bold",
                     }}
+                    multiline
+                    onChangeText={(text) => setTask(text)}
+                    scrollEnabled={false}
                 >
-                    <MaterialCommunityIcons
-                        name="close"
-                        size={22}
-                        color="black"
-                    />
-                </TouchableOpacity>
+                    {task}
+                </TextInput>
+                <Button
+                    title="Save"
+                    onPress={() => {
+                        Alert.alert("Do you want to save the changes?", "", [
+                            {
+                                text: "Yes",
+                                onPress: onSavePress,
+                            },
+                            {
+                                text: "Keep editing",
+                            },
+                            {
+                                text: "No",
+                                onPress: onUnsavePress,
+                            },
+                        ]);
+                    }}
+                />
             </View>
 
             <ScrollView
                 ref={scrollView}
                 keyboardDismissMode="on-drag"
-                style={{ height: "72.5%" }}
+                style={styles.scrollViewHeight}
             >
-                <View style={styles.categoryPicker}>
-                    <SelectBoxTaskDetail
-                        placeholder={placeholder}
-                        items={categories}
-                        onValueChange={(value, index) => {
-                            setCategory(value);
-                            index !== 0
-                                ? setCategoryColor(
-                                      categories[index - 1].colorIcon
-                                  )
-                                : setCategoryColor(null);
-                        }}
-                        key={(value) => value}
-                        value={category}
-                        color={categoryColor}
-                        title="Category"
-                    />
-                </View>
                 <BoxInfo
                     title="Due Date"
                     subTitle={moment(date).format("DD / MM / YYYY")}
                     onPress={() => setModalDatePickerVisible(true)}
+                    style={{
+                        borderTopLeftRadius: 15,
+                        borderTopRightRadius: 15,
+                    }}
                 />
                 <Modal
                     isVisible={modalDatePickerVisible}
@@ -247,12 +254,77 @@ function TaskDetailScreen({
                     onFocus={() =>
                         scrollView.current.scrollTo({
                             x: 0,
-                            y: 220,
+                            y: 180,
                             animation: true,
                         })
                     }
-                    value={noteTask}
+                    value={note}
                 />
+                <View style={styles.categoryPicker}>
+                    <SelectBoxTaskDetail
+                        placeholder={placeholder}
+                        items={categories}
+                        onNewCategoryPress={() =>
+                            setModelNewCategoryVisible(true)
+                        }
+                        onValueChange={(value, index) => {
+                            setCategory(value);
+                            index !== 0
+                                ? setCategoryColor(
+                                      categories[index - 1].colorIcon
+                                  )
+                                : setCategoryColor(null);
+                        }}
+                        key={(value) => value}
+                        value={category}
+                        color={categoryColor}
+                        title="Category"
+                    />
+                </View>
+                <Modal
+                    avoidKeyboard
+                    isVisible={modelNewCategoryVisible}
+                    style={styles.modalContainer}
+                    backdropOpacity={0.5}
+                    onBackdropPress={() => setModelNewCategoryVisible(false)}
+                    onBackButtonPress={() => setModelNewCategoryVisible(false)}
+                    animationIn="zoomIn"
+                    animationOut="zoomOut"
+                >
+                    <View style={[styles.modalContent, { height: 220 }]}>
+                        <View style={styles.headerModal}>
+                            <H1>Category</H1>
+                            <TouchableOpacity
+                                onPress={() =>
+                                    setModelNewCategoryVisible(false)
+                                }
+                                style={styles.closeModal}
+                            >
+                                <MaterialIcons
+                                    name="close"
+                                    size={20}
+                                    color={colors.medium}
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View>
+                            <ScrollView keyboardShouldPersistTaps="handled">
+                                <TextInput
+                                    autoFocus
+                                    placeholder="New category..."
+                                    placeholderTextColor={colors.placeholder}
+                                    style={styles.newCategoryInput}
+                                    onChangeText={(text) =>
+                                        setNewCategory(text)
+                                    }
+                                />
+                            </ScrollView>
+                        </View>
+
+                        <Button title="Done" onPress={handleNewCategoryPress} />
+                    </View>
+                </Modal>
 
                 <BoxInfo
                     title="Repeat"
@@ -284,16 +356,19 @@ function TaskDetailScreen({
                     title="Delete"
                     backgroundColor="#FEECEB"
                     textColor="#EC3C31"
+                    onPress={onDeletePress}
                 />
                 <TaskDetailButton
                     title="Miss"
                     backgroundColor="#FEF7DD"
                     textColor="#FD6B17"
+                    onPress={onMissPress}
                 />
                 <TaskDetailButton
                     title="Complete"
                     backgroundColor="#D7FED8"
                     textColor="#0D7F0F"
+                    onPress={onCompletePress}
                 />
             </View>
         </View>
@@ -314,6 +389,14 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 15,
         marginBottom: 2,
     },
+    headerModal: {
+        alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingHorizontal: 30,
+        paddingBottom: 20,
+        paddingTop: 0,
+    },
     newNoteInput: {
         width: "100%",
         backgroundColor: colors.light,
@@ -326,19 +409,34 @@ const styles = StyleSheet.create({
         minHeight: 150,
         paddingTop: 20,
     },
+    newCategoryInput: {
+        width: "100%",
+        backgroundColor: colors.light,
+        height: 59,
+        paddingLeft: 30,
+        marginTop: 10,
+        marginBottom: 27,
+        fontSize: 19,
+        fontWeight: "500",
+        minHeight: 70,
+    },
     modalContainer: {},
     modalContent: {
         backgroundColor: "white",
-        height: "55%",
+        height: "64%",
         paddingVertical: 0,
         paddingTop: 20,
-        borderTopRightRadius: 17,
-        borderTopLeftRadius: 17,
+        borderRadius: 17,
+        overflow: "hidden",
     },
+
     footer: {
         flexDirection: "row",
         justifyContent: "space-between",
         paddingVertical: 20,
+    },
+    scrollViewHeight: {
+        height: "77%",
     },
 });
 
