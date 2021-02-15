@@ -2,12 +2,29 @@ import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { CalendarList } from "react-native-calendars";
 import { MaterialIcons } from "@expo/vector-icons";
+import moment from "moment";
 
-import defaultStyles from "../config/defaultStyles";
-import H1 from "./text/H1";
-import colors from "../config/colors";
+import H1 from "../text/H1";
+import colors from "../../config/colors";
+import tasks from "../../values/tasks";
 
-function CalendarListPicker({ onClosePress, onDayPress, style }) {
+function CalendarListPicker({ onClosePress, onDayPress, style, selectedDay }) {
+    const markedTaskDate = {};
+    markedTaskDate[selectedDay] = { selected: true };
+    for (let i in tasks) {
+        if (
+            selectedDay === moment(tasks[i].date).format("YYYY-MM-DD") &&
+            tasks[i].status === "waiting"
+        )
+            markedTaskDate[selectedDay] = {
+                selected: true,
+                marked: true,
+            };
+        else if (tasks[i].status === "waiting")
+            markedTaskDate[moment(tasks[i].date).format("YYYY-MM-DD")] = {
+                marked: true,
+            };
+    }
     return (
         <>
             <View style={styles.headerModal}>
@@ -43,6 +60,7 @@ function CalendarListPicker({ onClosePress, onDayPress, style }) {
                         borderTopLeftRadius: 50,
                         borderTopRightRadius: 50,
                     }}
+                    markedDates={markedTaskDate}
                 />
             </View>
         </>

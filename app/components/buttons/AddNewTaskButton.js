@@ -6,21 +6,28 @@ import {
     TextInput,
     Button,
     ScrollView,
+    Keyboard,
+    Alert,
 } from "react-native";
-import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+    FontAwesome5,
+    MaterialCommunityIcons,
+    MaterialIcons,
+} from "@expo/vector-icons";
 import { useState } from "react";
 import Modal from "react-native-modal";
 import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRef } from "react";
+import randomColor from "randomcolor";
 
 import colors from "../../config/colors";
 import H1 from "../text/H1";
 import routes from "../../navigation/routes";
-import useStateWithPromise from "../hooks/useStateWithPromise";
-import BoxInfo from "../BoxInfo";
-import CalendarListPicker from "../CalendarListPicker";
-import SelectBoxTaskDetail from "../SelectBoxTaskDetail";
+import useStateWithPromise from "../../hooks/useStateWithPromise";
+import BoxInfo from "../boxes/BoxInfo";
+import CalendarListPicker from "../items/CalendarListPicker";
+import SelectBoxTaskDetail from "../boxes/SelectBoxTaskDetail";
 import categories from "../../values/categories";
 
 const placeholder = {
@@ -34,6 +41,9 @@ function AddNewTaskButton({ navigation }) {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [modalDatePickerVisible, setModalDatePickerVisible] = useState(false);
+    const [modalNewCategoryVisible, setModalNewCategoryVisible] = useState(
+        false
+    );
 
     const [isStartDatePickerVisible, setStartDatePickerVisibility] = useState(
         false
@@ -47,6 +57,7 @@ function AddNewTaskButton({ navigation }) {
     const [id, setId] = useState(3);
     const [category, setCategory] = useState();
     const [categoryColor, setCategoryColor] = useState(null);
+    const [newCategory, setNewCategory] = useState();
 
     const [typeOfTime, setTypeOfTime] = useState("startTime");
     const [startTime, setStartTime] = useState(null);
@@ -67,39 +78,57 @@ function AddNewTaskButton({ navigation }) {
 
     //Handle Date selected
     const handleDateSelect = (date) => {
-        const dateSelected =
-            moment(Date.now()).format("YYYY-MM-DD") === date.dateString
-                ? Date.now()
-                : date.dateString + "T05:00:00.000Z";
+        const dateSelected = startTime
+            ? date.dateString + moment(startTime).format().substr(10)
+            : moment(Date.now()).format("YYYY-MM-DD") === date.dateString
+            ? Date.now()
+            : date.dateString + "T05:00:00.000Z";
         setDate(dateSelected);
 
+        setStartTime(startTime ? dateSelected : null);
+        setEndTime(null);
         setModalDatePickerVisible(false);
         console.log(dateSelected);
     };
 
     //Handle Add press
     const handleAddPress = async () => {
-        setId(id + 1);
-        let taskDetail = {
-            date: startTime ? startTime : date,
-            endTime: endTime,
-            id: id,
-            note: note,
-            startTime: startTime,
-            task: task,
-            status: "waiting",
-            repeat: "",
-            reminder: "",
-            subTasks: [],
-            category: category,
-            categoryColor: categoryColor,
-        };
-        const result = await setTaskItem(taskDetail);
-        navigation.jumpTo(routes.TASKS, result);
-        setModalVisible(false);
-        setTask(null);
-        setNote(null);
-        setStartTime(null), setEndTime(null);
+        if (task) {
+            setId(id + 1);
+            let taskDetail = {
+                date: startTime ? startTime : date,
+                endTime: endTime,
+                id: id,
+                note: note,
+                startTime: startTime,
+                task: task,
+                status: "waiting",
+                repeat: "",
+                reminder: "",
+                subTasks: [],
+                category: category ? category : "general",
+                categoryColor: categoryColor ? categoryColor : colors.primary,
+            };
+            const result = await setTaskItem(taskDetail);
+            navigation.jumpTo(routes.TASKS, result);
+
+            category
+                ? categories[
+                      categories.findIndex(
+                          (i) =>
+                              i.value.toLowerCase() === category.toLowerCase()
+                      )
+                  ].totalTasks++
+                : categories[0].totalTasks++;
+
+            setModalVisible(false);
+            setTask(null);
+            setNote(null);
+            setStartTime(null), setEndTime(null);
+            setCategory(null);
+        } else {
+            Alert.alert("Error", "Task name is required", [{ text: "OK" }]);
+        }
     };
 
     //handleCancelSetEndTime
@@ -108,6 +137,38 @@ function AddNewTaskButton({ navigation }) {
         setEndDatePickerVisibility(false);
     };
 
+    //handleCancelAddTask
+    const handleCancelAddTask = () => {
+        setModalVisible(false);
+        setTask(null);
+        setNote(null);
+        setStartTime(null), setEndTime(null);
+    };
+
+    //handle new category press
+    const handleNewCategoryPress = () => {
+        Keyboard.dismiss();
+        let randomcolor = randomColor();
+        if (
+            categories.findIndex(
+                (i) => i.value.toLowerCase() === newCategory.toLowerCase()
+            ) === -1
+        ) {
+            categories.push({
+                label: newCategory,
+                value: newCategory,
+                colorIcon: randomcolor,
+                totalTasks: 0,
+                completeTasks: 0,
+            });
+            setCategory(newCategory);
+
+            setCategoryColor(randomcolor);
+            setModalNewCategoryVisible(false);
+        } else {
+            Alert.alert("Error", "This category already exists");
+        }
+    };
     return (
         <>
             <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -125,17 +186,17 @@ function AddNewTaskButton({ navigation }) {
                 avoidKeyboard
                 backdropOpacity={0.3}
                 isVisible={modalVisible}
-                onBackdropPress={() => setModalVisible(false)}
-                onBackButtonPress={() => setModalVisible(false)}
+                onBackdropPress={handleCancelAddTask}
+                onBackButtonPress={handleCancelAddTask}
                 style={styles.contentView}
-                onSwipeComplete={() => setModalVisible(false)}
+                onSwipeComplete={handleCancelAddTask}
                 swipeDirection="down"
                 propagateSwipe
             >
                 <View style={styles.content}>
                     <View style={styles.header}>
                         <TouchableOpacity
-                            onPress={() => setModalVisible(false)}
+                            onPress={handleCancelAddTask}
                             style={{ width: 45 }}
                         >
                             <MaterialCommunityIcons
@@ -220,7 +281,16 @@ function AddNewTaskButton({ navigation }) {
                             style={{ marginBottom: 15 }}
                         />
                         <DateTimePickerModal
-                            date={new Date(date)}
+                            date={
+                                startTime
+                                    ? moment(startTime).format(
+                                          "YYYY - MM - DD"
+                                      ) ===
+                                      moment(date).format("YYYY - MM - DD")
+                                        ? new Date(startTime)
+                                        : new Date(date)
+                                    : new Date(date)
+                            }
                             isVisible={isStartDatePickerVisible}
                             mode="time"
                             onConfirm={handleTimePicker}
@@ -238,7 +308,11 @@ function AddNewTaskButton({ navigation }) {
                                 startTime ? new Date(startTime) : new Date(date)
                             }
                             date={
-                                startTime ? new Date(startTime) : new Date(date)
+                                endTime
+                                    ? new Date(endTime)
+                                    : startTime
+                                    ? new Date(startTime)
+                                    : new Date(date)
                             }
                             headerTextIOS="Pick date and time"
                             isVisible={isEndDatePickerVisible}
@@ -292,8 +366,69 @@ function AddNewTaskButton({ navigation }) {
                                 value={category}
                                 color={categoryColor}
                                 title="Category"
+                                onNewCategoryPress={() =>
+                                    setModalNewCategoryVisible(true)
+                                }
                             />
                         </View>
+                        <Modal
+                            avoidKeyboard
+                            isVisible={modalNewCategoryVisible}
+                            backdropOpacity={0.5}
+                            onBackdropPress={() =>
+                                setModalNewCategoryVisible(false)
+                            }
+                            onBackButtonPress={() =>
+                                setModalNewCategoryVisible(false)
+                            }
+                            animationIn="zoomIn"
+                            animationOut="zoomOut"
+                        >
+                            <View
+                                style={[
+                                    styles.modalCategoryContent,
+                                    { height: 220 },
+                                ]}
+                            >
+                                <View style={styles.headerModal}>
+                                    <H1>Category</H1>
+                                    <TouchableOpacity
+                                        onPress={() =>
+                                            setModalNewCategoryVisible(false)
+                                        }
+                                        style={styles.closeModal}
+                                    >
+                                        <MaterialIcons
+                                            name="close"
+                                            size={20}
+                                            color={colors.medium}
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View>
+                                    <ScrollView keyboardShouldPersistTaps="handled">
+                                        <TextInput
+                                            autoFocus
+                                            placeholder="New category..."
+                                            placeholderTextColor={
+                                                colors.placeholder
+                                            }
+                                            style={styles.newCategoryInput}
+                                            onChangeText={(text) =>
+                                                setNewCategory(text)
+                                            }
+                                        />
+                                    </ScrollView>
+                                </View>
+
+                                <Button
+                                    title="Done"
+                                    onPress={handleNewCategoryPress}
+                                />
+                            </View>
+                        </Modal>
+
                         <TextInput
                             placeholder="Note..."
                             style={styles.newNoteInput}
@@ -360,6 +495,17 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.6,
         elevation: 10,
     },
+    newCategoryInput: {
+        width: "100%",
+        backgroundColor: colors.light,
+        height: 59,
+        paddingLeft: 30,
+        marginTop: 10,
+        marginBottom: 27,
+        fontSize: 19,
+        fontWeight: "500",
+        minHeight: 70,
+    },
     newNoteInput: {
         width: "100%",
         backgroundColor: colors.light,
@@ -394,6 +540,14 @@ const styles = StyleSheet.create({
         paddingTop: 20,
         borderTopRightRadius: 17,
         borderTopLeftRadius: 17,
+    },
+    modalCategoryContent: {
+        backgroundColor: "white",
+        height: "64%",
+        paddingVertical: 0,
+        paddingTop: 20,
+        borderRadius: 17,
+        overflow: "hidden",
     },
     tabContainer: {
         width: 100,

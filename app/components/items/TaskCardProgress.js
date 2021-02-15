@@ -2,11 +2,12 @@ import React from "react";
 import { View, StyleSheet, Text, TouchableHighlight } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 
-import colors from "../config/colors";
+import colors from "../../config/colors";
 
-function TaskCard({
+function TaskCardProgress({
     task,
     startTime,
+    categoryColor,
     endTime,
     renderRightActions,
     renderLeftActions,
@@ -14,24 +15,34 @@ function TaskCard({
 }) {
     return (
         <Swipeable
-            renderRightActions={renderRightActions}
-            renderLeftActions={renderLeftActions}
+            renderRightActions={renderRightActions ? renderRightActions : null}
+            renderLeftActions={renderLeftActions ? renderLeftActions : null}
             overshootLeft={false}
             overshootRight={false}
             overshootFriction={8}
         >
-            <TouchableHighlight underlayColor={colors.light} onPress={onPress}>
+            <TouchableHighlight underlayColor="#e222" onPress={onPress}>
                 <View style={styles.container}>
                     <View style={styles.timeContainer}>
                         <Text style={styles.time}>{startTime}</Text>
                     </View>
                     <View style={styles.detailContainer}>
-                        <Text style={styles.task}>{task}</Text>
-                        {endTime && (
-                            <Text style={styles.rangeTime}>
-                                {startTime} - {endTime}
-                            </Text>
-                        )}
+                        <View style={{ width: "85%" }}>
+                            <Text style={styles.task}>{task}</Text>
+                            {endTime && (
+                                <Text style={styles.rangeTime}>
+                                    {startTime} - {endTime}
+                                </Text>
+                            )}
+                        </View>
+                        <View
+                            style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: 5,
+                                backgroundColor: categoryColor,
+                            }}
+                        ></View>
                     </View>
                 </View>
             </TouchableHighlight>
@@ -48,10 +59,12 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
     },
     detailContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
         backgroundColor: colors.light,
         borderTopLeftRadius: 50,
         borderBottomLeftRadius: 50,
-        justifyContent: "center",
+        alignItems: "center",
         paddingHorizontal: 30,
         paddingVertical: 15,
         width: "80%",
@@ -71,4 +84,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default TaskCard;
+export default TaskCardProgress;

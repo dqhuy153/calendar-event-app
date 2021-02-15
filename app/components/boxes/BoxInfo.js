@@ -2,8 +2,8 @@ import React from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { Entypo } from "@expo/vector-icons";
 
-import colors from "../config/colors";
-import TextInAddNew from "./text/TextInAddNew";
+import colors from "../../config/colors";
+import TextInAddNew from "../text/TextInAddNew";
 
 function BoxInfo({ onPress, title, subTitle, style }) {
     return onPress ? (

@@ -2,13 +2,16 @@ import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { Feather } from "@expo/vector-icons";
-import AddButton from "./buttons/AddButton";
+import AddButton from "../buttons/AddButton";
 
 function SelectBoxTaskDetail({
     placeholder,
     items,
     onValueChange,
     onNewCategoryPress,
+    onClose,
+    onDonePress,
+    onOpen,
     value,
     color,
     title,
@@ -25,6 +28,7 @@ function SelectBoxTaskDetail({
                 <RNPickerSelect
                     placeholder={placeholder}
                     items={items}
+                    onOpen={onOpen}
                     onValueChange={onValueChange}
                     style={{
                         ...pickerSelectStyles,
@@ -56,6 +60,9 @@ function SelectBoxTaskDetail({
                         );
                     }}
                     fixAndroidTouchableBug
+                    onDonePress={onDonePress}
+                    onClose={onClose}
+                    on
                 />
             </View>
         </View>

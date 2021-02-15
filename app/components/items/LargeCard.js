@@ -2,8 +2,8 @@ import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import ProgressCircle from "react-native-progress-circle";
 
-import colors from "../config/colors";
-import defaultStyles from "../config/defaultStyles";
+import colors from "../../config/colors";
+import defaultStyles from "../../config/defaultStyles";
 
 function LargeCard({ completeTasks, percent, totalTasks, style }) {
     return (
@@ -13,7 +13,7 @@ function LargeCard({ completeTasks, percent, totalTasks, style }) {
                     percent={percent}
                     radius={40}
                     borderWidth={8}
-                    color={colors.primary}
+                    color={colors.secondary}
                     shadowColor="#e4e4e4"
                     bgColor="#fff"
                 >

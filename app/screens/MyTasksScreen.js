@@ -6,55 +6,52 @@ import {
     TouchableOpacity,
     FlatList,
     Modal,
+    Alert,
 } from "react-native";
 import CalendarStrip from "react-native-calendar-strip";
 import moment from "moment";
 import { FontAwesome } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import ModalLb from "react-native-modal";
+import * as Yup from "yup";
 
-import CalendarListPicker from "../components/CalendarListPicker";
+import Form from "../components/form/Form";
+import CalendarListPicker from "../components/items/CalendarListPicker";
 import H1 from "../components/text/H1";
-import Screen from "../components/Screen";
+import Screen from "../components/items/Screen";
 import colors from "../config/colors";
 import defaultStyles from "../config/defaultStyles";
-import TaskCard from "../components/TaskCard";
-import ListItemAction from "../components/ListItemAction";
+import TaskCard from "../components/items/TaskCard";
+import ListItemAction from "../components/items/ListItemAction";
 import TaskDetailScreen from "./TaskDetailScreen";
+import tasks from "../values/tasks";
+import categories from "../values/categories";
+import TaskCardProgress from "../components/items/TaskCardProgress";
 
 //prevent warning
 moment.createFromInputFallback = function (config) {
     config._d = new Date(config._i);
 };
 
-const tasks = [
+const validationSchema = Yup.object().shape({
+    task: Yup.string().required().min(1).label("Task"),
+    date: Yup.string().required().label("Date"),
+    startTime: Yup.string().nullable().label("Start time"),
+    endTime: Yup.string().nullable().label("End time"),
+    note: Yup.string().nullable().label("Note"),
+    category: Yup.string().nullable().label("Category"),
+    categoryColor: Yup.string().nullable().label("Category color"),
+});
+
+const markedDatesArray = [
     {
-        id: 1,
-        task: "Task 1",
-        startTime: moment(Date.now()).format("YYYY-MM-DD") + "T09:00:24+07:00",
-        endTime: moment(Date.now()).format("YYYY-MM-DD") + "T11:00:24+07:00",
         date: Date.now(),
-        status: "waiting",
-        note: "Note of task 1",
-        repeat: "",
-        reminder: "",
-        subTasks: [],
-        category: "education",
-        categoryColor: colors.primary,
-    },
-    {
-        id: 2,
-        task: "Task 2",
-        startTime: moment(Date.now()).format("YYYY-MM-DD") + "T13:00:24+07:00",
-        endTime: moment(Date.now()).format("YYYY-MM-DD") + "T16:00:24+07:00",
-        date: Date.now(),
-        status: "waiting",
-        note: "Note of task 2",
-        repeat: "",
-        reminder: "",
-        subTasks: [],
-        category: "personal",
-        categoryColor: "lightgreen",
+        lines: [
+            {
+                color: colors.primary,
+                selectedColor: colors.primary,
+            },
+        ],
     },
 ];
 
@@ -66,6 +63,7 @@ function MyTasksScreen({ route }) {
     const calendarStrip = useRef();
     const [selectedDate, setSelectedDate] = useState(Date.now());
     const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [taskDetailToDetailScreen, setTaskDetailToDetailScreen] = useState({
         id: "",
         task: "",
@@ -81,29 +79,28 @@ function MyTasksScreen({ route }) {
         categoryColor: "",
     });
 
+    //Select today when app launch first time
     useEffect(() => {
         onDateSelected(Date.now());
-        //calendarStrip.current.setSelectedDate(Date.now());
     }, []);
 
     //handle add new task
-    const taskDetail = route.params;
+    const newTaskDetail = route.params;
     useEffect(() => {
-        taskDetail ? console.log(taskDetail) : console.log("no task added");
-        if (taskDetail) {
+        if (typeof newTaskDetail === "object") {
             tasks.push({
-                id: taskDetail.id,
-                task: taskDetail.task,
-                startTime: taskDetail.startTime,
-                endTime: taskDetail.endTime,
-                date: taskDetail.date,
-                note: taskDetail.note,
-                status: taskDetail.status,
+                id: newTaskDetail.id,
+                task: newTaskDetail.task,
+                startTime: newTaskDetail.startTime,
+                endTime: newTaskDetail.endTime,
+                date: newTaskDetail.date,
+                note: newTaskDetail.note,
+                status: newTaskDetail.status,
                 repeat: "",
                 reminder: "",
                 subTasks: [],
-                category: taskDetail.category,
-                categoryColor: taskDetail.categoryColor,
+                category: newTaskDetail.category,
+                categoryColor: newTaskDetail.categoryColor,
             });
             tasks.sort(
                 (a, b) =>
@@ -111,11 +108,11 @@ function MyTasksScreen({ route }) {
                     moment(b.startTime).format("YYYYMMDDHHmmss")
             );
 
-            setSelectedDate(taskDetail.date);
-            calendarStrip.current.setSelectedDate(taskDetail.date);
-            onDateSelected(taskDetail.date);
+            onDateSelected(newTaskDetail.date);
+            calendarStrip.current.setSelectedDate(newTaskDetail.date);
         }
-    }, [taskDetail]);
+        console.log(newTaskDetail);
+    }, [newTaskDetail]);
 
     //Handle day selected in calendar trip
     const onDateSelected = (date) => {
@@ -124,7 +121,8 @@ function MyTasksScreen({ route }) {
             tasks.filter(
                 (item) =>
                     moment(item.date).format("DD/MM/YYYY") ===
-                    moment(date).format("DD/MM/YYYY")
+                        moment(date).format("DD/MM/YYYY") &&
+                    item.status === "waiting"
             )
         );
     };
@@ -147,7 +145,52 @@ function MyTasksScreen({ route }) {
         tasks.splice(tasks.indexOf(deleteTask), 1);
         setTaskList(taskList.filter((item) => item.id !== deleteTask.id));
 
-        console.log("Delete" + deleteTask);
+        categories[
+            categories.findIndex(
+                (i) =>
+                    i.value.toLowerCase() === deleteTask.category.toLowerCase()
+            )
+        ].totalTasks--;
+    };
+
+    //handle save press in detail task screen
+    const handleSavePressInDetailTask = (item) => {
+        console.log(item);
+
+        tasks.splice(
+            tasks.findIndex((task) => task.id === item.id),
+            1,
+            item
+        );
+
+        tasks.sort(
+            (a, b) =>
+                moment(a.startTime).format("YYYYMMDDHHmmss") -
+                moment(b.startTime).format("YYYYMMDDHHmmss")
+        );
+
+        onDateSelected(item.date);
+        calendarStrip.current.setSelectedDate(item.date);
+        setTaskDetailModalVisible(false);
+    };
+
+    //handle miss task
+    const handleMissTask = (task) => {
+        task.status = "miss";
+        setTaskDetailModalVisible(false);
+        onDateSelected(task.date);
+    };
+
+    const handleCompleteTask = (task) => {
+        task.status = "complete";
+        categories[
+            categories.findIndex(
+                (i) => i.value.toLowerCase() === task.category.toLowerCase()
+            )
+        ].completeTasks++;
+
+        setTaskDetailModalVisible(false);
+        onDateSelected(task.date);
     };
 
     return (
@@ -206,17 +249,7 @@ function MyTasksScreen({ route }) {
                     }
                     startingDate={Date.now()}
                     numDaysInWeek={5}
-                    markedDates={[
-                        {
-                            date: Date.now(),
-                            lines: [
-                                {
-                                    color: colors.primary,
-                                    selectedColor: colors.primary,
-                                },
-                            ],
-                        },
-                    ]}
+                    markedDates={markedDatesArray}
                     ref={calendarStrip}
                     selectedDate={selectedDate}
                     scrollable
@@ -236,8 +269,10 @@ function MyTasksScreen({ route }) {
                 <FlatList
                     data={taskList}
                     keyExtractor={(item) => item.id.toString()}
+                    refreshing={refreshing}
+                    onRefresh={() => onDateSelected(selectedDate)}
                     renderItem={({ item }) => (
-                        <TaskCard
+                        <TaskCardProgress
                             task={item.task}
                             startTime={
                                 item.startTime
@@ -246,20 +281,47 @@ function MyTasksScreen({ route }) {
                             }
                             endTime={
                                 item.endTime
-                                    ? moment(item.endTime).format("HH:mm")
+                                    ? moment(item.startTime).format(
+                                          "YYYY-MM-DD"
+                                      ) ===
+                                      moment(item.endTime).format("YYYY-MM-DD")
+                                        ? moment(item.endTime).format("HH:mm")
+                                        : "(" +
+                                          moment(item.endTime).format(
+                                              "HH:mm DD/MM/YY"
+                                          ) +
+                                          ")"
                                     : null
                             }
+                            categoryColor={item.categoryColor}
                             renderRightActions={() => (
                                 <ListItemAction
                                     iconName="done"
-                                    onPress={() => handleDelete(item)}
+                                    onPress={() => {
+                                        handleCompleteTask(item);
+                                    }}
                                 />
                             )}
                             renderLeftActions={() => (
                                 <ListItemAction
                                     iconName="delete-outline"
                                     backgroundColor={colors.secondary}
-                                    onPress={() => handleDelete(item)}
+                                    onPress={() => {
+                                        Alert.alert(
+                                            "Do you want to delete the task?",
+                                            "",
+                                            [
+                                                {
+                                                    text: "No",
+                                                },
+                                                {
+                                                    text: "Yes",
+                                                    onPress: () =>
+                                                        handleDelete(item),
+                                                },
+                                            ]
+                                        );
+                                    }}
                                 />
                             )}
                             onPress={() => {
@@ -283,9 +345,11 @@ function MyTasksScreen({ route }) {
                         onClosePress={() => setCalendarListModalVisible(false)}
                         onDayPress={handleCalendarListSelect}
                         style={defaultStyles.cardShadow}
+                        selectedDay={moment(selectedDate).format("YYYY-MM-DD")}
                     />
                 </Screen>
             </Modal>
+
             <ModalLb
                 isVisible={taskDetailModalVisible}
                 style={styles.modalContainer}
@@ -299,20 +363,60 @@ function MyTasksScreen({ route }) {
                 swipeDirection="down"
                 propagateSwipe
             >
-                <View style={styles.modalContent}>
-                    <TaskDetailScreen
-                        onUnsavePress={() => setTaskDetailModalVisible(false)}
-                        taskName={taskDetailToDetailScreen.task}
-                        startTimeTask={taskDetailToDetailScreen.startTime}
-                        endTimeTask={taskDetailToDetailScreen.endTime}
-                        noteTask={taskDetailToDetailScreen.note}
-                        dayTask={taskDetailToDetailScreen.date}
-                        categoryTask={taskDetailToDetailScreen.category}
-                        categoryColorTask={
-                            taskDetailToDetailScreen.categoryColor
-                        }
-                    />
-                </View>
+                <Form
+                    initialValues={{
+                        id: taskDetailToDetailScreen.id,
+                        task: taskDetailToDetailScreen.task,
+                        startTime: taskDetailToDetailScreen.startTime,
+                        endTime: taskDetailToDetailScreen.endTime,
+                        date: taskDetailToDetailScreen.date,
+                        note: taskDetailToDetailScreen.note,
+                        status: "waiting",
+                        repeat: "",
+                        reminder: "",
+                        subTasks: [],
+                        category: taskDetailToDetailScreen.category,
+                        categoryColor: taskDetailToDetailScreen.categoryColor,
+                    }}
+                    onSubmit={handleSavePressInDetailTask}
+                    validationSchema={validationSchema}
+                >
+                    <View style={styles.modalContent}>
+                        <TaskDetailScreen
+                            onUnsavePress={() =>
+                                setTaskDetailModalVisible(false)
+                            }
+                            onDeletePress={() => {
+                                Alert.alert(
+                                    "Do you want to delete the task?",
+                                    "",
+                                    [
+                                        {
+                                            text: "Yes",
+                                            onPress: () => {
+                                                handleDelete(
+                                                    taskDetailToDetailScreen
+                                                );
+                                                setTaskDetailModalVisible(
+                                                    false
+                                                );
+                                            },
+                                        },
+                                        {
+                                            text: "No",
+                                        },
+                                    ]
+                                );
+                            }}
+                            onMissPress={() =>
+                                handleMissTask(taskDetailToDetailScreen)
+                            }
+                            onCompletePress={() => {
+                                handleCompleteTask(taskDetailToDetailScreen);
+                            }}
+                        />
+                    </View>
+                </Form>
             </ModalLb>
         </Screen>
     );

@@ -30,7 +30,7 @@ function AppNavigator() {
                     tabBarIcon: ({ color, size }) => (
                         <FontAwesome5 name="check" size={size} color={color} />
                     ),
-                    tabBarLabel: {},
+                    //unmountOnBlur: true,
                 }}
             />
             <Tab.Screen
@@ -53,6 +53,7 @@ function AppNavigator() {
                             color={color}
                         />
                     ),
+                    unmountOnBlur: true,
                 }}
             />
         </Tab.Navigator>

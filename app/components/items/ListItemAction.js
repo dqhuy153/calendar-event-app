@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-import colors from "../config/colors";
+import colors from "../../config/colors";
 
 function ListItemAction({
     onPress,

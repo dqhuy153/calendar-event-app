@@ -9,20 +9,22 @@ import {
     Button,
     Alert,
 } from "react-native";
-import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import Modal from "react-native-modal";
 import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRef } from "react";
 import randomColor from "randomcolor";
+import { useFormikContext } from "formik";
 
 import categories from "../values/categories";
 import TaskDetailButton from "../components/buttons/TaskDetailButton";
 import H1 from "../components/text/H1";
 import colors from "../config/colors";
-import SelectBoxTaskDetail from "../components/SelectBoxTaskDetail";
-import BoxInfo from "../components/BoxInfo";
-import CalendarListPicker from "../components/CalendarListPicker";
+import SelectBoxTaskDetail from "../components/boxes/SelectBoxTaskDetail";
+import BoxInfo from "../components/boxes/BoxInfo";
+import CalendarListPicker from "../components/items/CalendarListPicker";
+import ErrorMessage from "../components/text/ErrorMessage";
 
 const placeholder = {
     label: "None",
@@ -32,25 +34,15 @@ const placeholder = {
 
 function TaskDetailScreen({
     onUnsavePress,
-    onSavePress,
-    dayTask,
-    startTimeTask,
-    endTimeTask,
-    noteTask,
-    taskName,
-    categoryTask,
-    categoryColorTask,
     onDeletePress,
     onMissPress,
     onCompletePress,
 }) {
     const [modalDatePickerVisible, setModalDatePickerVisible] = useState(false);
-    const [modelNewCategoryVisible, setModelNewCategoryVisible] = useState(
+    const [modalNewCategoryVisible, setModalNewCategoryVisible] = useState(
         false
     );
 
-    const [category, setCategory] = useState(categoryTask);
-    const [categoryColor, setCategoryColor] = useState(categoryColorTask);
     const [newCategory, setNewCategory] = useState();
     const [isStartDatePickerVisible, setStartDatePickerVisibility] = useState(
         false
@@ -58,16 +50,20 @@ function TaskDetailScreen({
     const [isEndDatePickerVisible, setEndDatePickerVisibility] = useState(
         false
     );
-    const [task, setTask] = useState(taskName);
-    const [note, setNote] = useState(noteTask);
-    const [date, setDate] = useState(dayTask);
-    const [id, setId] = useState(3);
-
+    //const [task, setTask] = useState(taskName);
     const [typeOfTime, setTypeOfTime] = useState("startTime");
-    const [startTime, setStartTime] = useState(startTimeTask);
-    const [endTime, setEndTime] = useState(endTimeTask);
+    const [change, setChange] = useState(false);
 
     const scrollView = useRef();
+
+    const {
+        errors,
+        setFieldTouched,
+        setFieldValue,
+        touched,
+        values,
+        handleSubmit,
+    } = useFormikContext();
 
     //Handle Time Picker
     const handleTimePicker = (date) => {
@@ -75,39 +71,56 @@ function TaskDetailScreen({
         setEndDatePickerVisibility(false);
         setStartDatePickerVisibility(false);
         typeOfTime === "startTime"
-            ? setStartTime(moment(date).format())
-            : setEndTime(moment(date).format());
+            ? setFieldValue("startTime", moment(date).format())
+            : setFieldValue("endTime", moment(date).format());
+        setChange(true);
     };
 
     //Handle Date selected
     const handleDateSelect = (date) => {
-        const dateSelected =
-            moment(Date.now()).format("YYYY-MM-DD") === date.dateString
-                ? Date.now()
-                : date.dateString + "T05:00:00.000Z";
-        setDate(dateSelected);
+        const dateSelected = values["startTime"]
+            ? date.dateString + moment(values["startTime"]).format().substr(10)
+            : moment(Date.now()).format("YYYY-MM-DD") === date.dateString
+            ? Date.now()
+            : date.dateString + "T05:00:00.000Z";
+        setFieldValue("date", dateSelected);
 
+        setFieldValue("startTime", values["startTime"] ? dateSelected : null);
+        setFieldValue("endTime", null);
         setModalDatePickerVisible(false);
-        console.log(dateSelected);
+        setChange(true);
     };
 
     //handleCancelSetEndTime
     const handleCancelSetEndTime = () => {
-        setEndTime(null);
+        setFieldValue("endTime", null);
         setEndDatePickerVisibility(false);
+        setChange(true);
     };
 
+    //handle press new category button
     const handleNewCategoryPress = () => {
         Keyboard.dismiss();
-        let randomcolor = randomColor();
-        categories.push({
-            label: newCategory,
-            value: newCategory,
-            colorIcon: randomcolor,
-        });
-        setCategory(newCategory);
-        setCategoryColor(randomcolor);
-        setModelNewCategoryVisible(false);
+        if (
+            categories.findIndex(
+                (i) => i.value.toLowerCase() === newCategory.toLowerCase()
+            ) === -1
+        ) {
+            let randomcolor = randomColor();
+            categories.push({
+                label: newCategory,
+                value: newCategory,
+                colorIcon: randomcolor,
+                totalTasks: 0,
+                completeTasks: 0,
+            });
+            setFieldValue("category", newCategory);
+            setFieldValue("categoryColor", randomcolor);
+            setModalNewCategoryVisible(false);
+            setChange(true);
+        } else {
+            Alert.alert("Error", "This category already exists");
+        }
     };
 
     return (
@@ -121,26 +134,37 @@ function TaskDetailScreen({
                     marginBottom: 15,
                 }}
             >
-                <TextInput
-                    style={{
-                        color: colors.primary,
-                        width: "60%",
-                        fontSize: 23,
-                        fontWeight: "bold",
-                    }}
-                    multiline
-                    onChangeText={(text) => setTask(text)}
-                    scrollEnabled={false}
-                >
-                    {task}
-                </TextInput>
+                <View style={{ width: "60%" }}>
+                    <TextInput
+                        style={{
+                            color: colors.primary,
+
+                            fontSize: 23,
+                            fontWeight: "bold",
+                        }}
+                        multiline
+                        scrollEnabled={false}
+                        onBlur={() => {
+                            setFieldTouched("task");
+                        }}
+                        onChangeText={(text) => {
+                            setChange(true);
+                            setFieldValue("task", text);
+                        }}
+                        value={values["task"]}
+                    />
+                    <ErrorMessage
+                        error={errors["task"]}
+                        visible={touched["task"]}
+                    />
+                </View>
                 <Button
                     title="Save"
                     onPress={() => {
                         Alert.alert("Do you want to save the changes?", "", [
                             {
                                 text: "Yes",
-                                onPress: onSavePress,
+                                onPress: handleSubmit,
                             },
                             {
                                 text: "Keep editing",
@@ -161,7 +185,7 @@ function TaskDetailScreen({
             >
                 <BoxInfo
                     title="Due Date"
-                    subTitle={moment(date).format("DD / MM / YYYY")}
+                    subTitle={moment(values["date"]).format("DD / MM / YYYY")}
                     onPress={() => setModalDatePickerVisible(true)}
                     style={{
                         borderTopLeftRadius: 15,
@@ -185,6 +209,9 @@ function TaskDetailScreen({
                                 setModalDatePickerVisible(false)
                             }
                             onDayPress={handleDateSelect}
+                            selectedDay={moment(values["date"]).format(
+                                "YYYY-MM-DD"
+                            )}
                         />
                     </View>
                 </Modal>
@@ -192,7 +219,9 @@ function TaskDetailScreen({
                 <BoxInfo
                     title="Start Time"
                     subTitle={
-                        startTime ? moment(startTime).format("HH:mm") : null
+                        values["startTime"]
+                            ? moment(values["startTime"]).format("HH:mm")
+                            : null
                     }
                     onPress={() => {
                         setStartDatePickerVisibility(true);
@@ -203,11 +232,13 @@ function TaskDetailScreen({
                 <BoxInfo
                     title="End Time"
                     subTitle={
-                        endTime
-                            ? moment(endTime).format("DD/MM") ===
-                              moment(startTime).format("DD/MM")
-                                ? moment(endTime).format("HH:mm")
-                                : moment(endTime).format("(DD/ MM/ YYYY) HH:mm")
+                        values["endTime"]
+                            ? moment(values["endTime"]).format("DD/MM") ===
+                              moment(values["startTime"]).format("DD/MM")
+                                ? moment(values["endTime"]).format("HH:mm")
+                                : moment(values["endTime"]).format(
+                                      "(DD/ MM/ YYYY) HH:mm"
+                                  )
                             : null
                     }
                     onPress={() => {
@@ -217,7 +248,16 @@ function TaskDetailScreen({
                     style={{ marginBottom: 5 }}
                 />
                 <DateTimePickerModal
-                    date={new Date(date)}
+                    date={
+                        values["startTime"]
+                            ? moment(values["startTime"]).format(
+                                  "YYYY - MM - DD"
+                              ) ===
+                              moment(values["date"]).format("YYYY - MM - DD")
+                                ? new Date(values["startTime"])
+                                : new Date(values["date"])
+                            : new Date(values["date"])
+                    }
                     isVisible={isStartDatePickerVisible}
                     mode="time"
                     onConfirm={handleTimePicker}
@@ -232,9 +272,17 @@ function TaskDetailScreen({
                 />
                 <DateTimePickerModal
                     minimumDate={
-                        startTime ? new Date(startTime) : new Date(date)
+                        values["endTime"]
+                            ? new Date(values["endTime"])
+                            : values["startTime"]
+                            ? new Date(values["startTime"])
+                            : new Date(values["date"])
                     }
-                    date={startTime ? new Date(startTime) : new Date(date)}
+                    date={
+                        values["startTime"]
+                            ? new Date(values["startTime"])
+                            : new Date(values["date"])
+                    }
                     headerTextIOS="Pick date and time"
                     isVisible={isEndDatePickerVisible}
                     is24Hour
@@ -249,7 +297,10 @@ function TaskDetailScreen({
                 <TextInput
                     placeholder="Note..."
                     style={styles.newNoteInput}
-                    onChangeText={(text) => setNote(text)}
+                    onChangeText={(text) => {
+                        setChange(true);
+                        setFieldValue("note", text);
+                    }}
                     multiline
                     onFocus={() =>
                         scrollView.current.scrollTo({
@@ -258,36 +309,61 @@ function TaskDetailScreen({
                             animation: true,
                         })
                     }
-                    value={note}
+                    value={values["note"]}
                 />
                 <View style={styles.categoryPicker}>
                     <SelectBoxTaskDetail
                         placeholder={placeholder}
                         items={categories}
                         onNewCategoryPress={() =>
-                            setModelNewCategoryVisible(true)
+                            setModalNewCategoryVisible(true)
                         }
+                        onOpen={() => {
+                            values["category"]
+                                ? categories[
+                                      categories.findIndex(
+                                          (i) =>
+                                              i.value.toLowerCase() ===
+                                              values["category"].toLowerCase()
+                                      )
+                                  ].totalTasks--
+                                : categories[0].totalTasks--;
+                        }}
                         onValueChange={(value, index) => {
-                            setCategory(value);
+                            setFieldValue("category", value);
                             index !== 0
-                                ? setCategoryColor(
+                                ? setFieldValue(
+                                      "categoryColor",
                                       categories[index - 1].colorIcon
                                   )
-                                : setCategoryColor(null);
+                                : setFieldValue("categoryColor", null);
+
+                            setChange(true);
+                        }}
+                        onClose={() => {
+                            values["category"]
+                                ? categories[
+                                      categories.findIndex(
+                                          (i) =>
+                                              i.value.toLowerCase() ===
+                                              values["category"].toLowerCase()
+                                      )
+                                  ].totalTasks++
+                                : categories[0].totalTasks++;
                         }}
                         key={(value) => value}
-                        value={category}
-                        color={categoryColor}
+                        value={values["category"]}
+                        color={values["categoryColor"]}
                         title="Category"
                     />
                 </View>
                 <Modal
                     avoidKeyboard
-                    isVisible={modelNewCategoryVisible}
+                    isVisible={modalNewCategoryVisible}
                     style={styles.modalContainer}
                     backdropOpacity={0.5}
-                    onBackdropPress={() => setModelNewCategoryVisible(false)}
-                    onBackButtonPress={() => setModelNewCategoryVisible(false)}
+                    onBackdropPress={() => setModalNewCategoryVisible(false)}
+                    onBackButtonPress={() => setModalNewCategoryVisible(false)}
                     animationIn="zoomIn"
                     animationOut="zoomOut"
                 >
@@ -296,7 +372,7 @@ function TaskDetailScreen({
                             <H1>Category</H1>
                             <TouchableOpacity
                                 onPress={() =>
-                                    setModelNewCategoryVisible(false)
+                                    setModalNewCategoryVisible(false)
                                 }
                                 style={styles.closeModal}
                             >
@@ -351,26 +427,55 @@ function TaskDetailScreen({
                 />
             </ScrollView>
 
-            <View style={styles.footer}>
-                <TaskDetailButton
-                    title="Delete"
-                    backgroundColor="#FEECEB"
-                    textColor="#EC3C31"
-                    onPress={onDeletePress}
-                />
-                <TaskDetailButton
-                    title="Miss"
-                    backgroundColor="#FEF7DD"
-                    textColor="#FD6B17"
-                    onPress={onMissPress}
-                />
-                <TaskDetailButton
-                    title="Complete"
-                    backgroundColor="#D7FED8"
-                    textColor="#0D7F0F"
-                    onPress={onCompletePress}
-                />
-            </View>
+            {!change ? (
+                <View style={styles.footer}>
+                    <TaskDetailButton
+                        title="Delete"
+                        backgroundColor="#FEECEB"
+                        textColor="#EC3C31"
+                        onPress={onDeletePress}
+                    />
+                    <TaskDetailButton
+                        title="Miss"
+                        backgroundColor="#FEF7DD"
+                        textColor="#FD6B17"
+                        onPress={onMissPress}
+                    />
+                    <TaskDetailButton
+                        title="Complete"
+                        backgroundColor="#D7FED8"
+                        textColor="#0D7F0F"
+                        onPress={onCompletePress}
+                    />
+                </View>
+            ) : (
+                <View style={styles.footer}>
+                    <TaskDetailButton
+                        title="Delete"
+                        backgroundColor="#eee"
+                        textColor={colors.lessBlack}
+                        onPress={() =>
+                            Alert.alert("Save your edited task first!")
+                        }
+                    />
+                    <TaskDetailButton
+                        title="Miss"
+                        backgroundColor="#eee"
+                        textColor={colors.lessBlack}
+                        onPress={() =>
+                            Alert.alert("Save your edited task first!")
+                        }
+                    />
+                    <TaskDetailButton
+                        title="Complete"
+                        backgroundColor="#eee"
+                        textColor={colors.lessBlack}
+                        onPress={() =>
+                            Alert.alert("Save your edited task first!")
+                        }
+                    />
+                </View>
+            )}
         </View>
     );
 }
